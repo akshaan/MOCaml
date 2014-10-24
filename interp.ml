@@ -52,11 +52,16 @@ let rec evalExpr (e:moexpr) (env:moenv) : movalue =
     | BoolConst(i) -> BoolVal(i)
     | Nil -> ListVal(NilVal)
     | Var(i) -> Env.lookup i env
-    | BinOp(IntConst(expr1),op,IntConst(expr2)) -> match op with Plus -> IntVal(expr1 + expr2) 
-					 | Minus -> IntVal(expr1 - expr2)
-					 | Times -> IntVal(expr1 * expr2)
-					 | Eq -> BoolVal(expr1 = expr2)
-				         | Gt -> BoolVal(expr1 > expr2)
+    | BinOp(expr1,op,expr2) -> (match op with Plus -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (IntVal(i),IntVal(j)) -> IntVal(i + j) | _ -> raise DynamicTypeError)   
+		 			 | Minus -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (IntVal(i),IntVal(j)) -> IntVal(i - j) | _ -> raise DynamicTypeError)
+					 | Times -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (IntVal(i),IntVal(j)) -> IntVal(i * j) | _ -> raise DynamicTypeError)
+					 | Eq -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (IntVal(i),IntVal(j)) -> BoolVal(i = j) | _ -> raise DynamicTypeError)
+				         | Gt -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (IntVal(i),IntVal(j)) -> BoolVal(i > j) | _ -> raise DynamicTypeError)
+				         | Cons -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (i, ListVal(j)) -> ListVal(ConsVal(i,j)) | _ -> raise DynamicTypeError)) 
+    | Negate(exp) -> (match (evalExpr exp env) with IntVal(i) -> IntVal(-i) | _ -> raise DynamicTypeError) 
+    | If(exp1,exp2,exp3) -> (match (evalExpr exp1 env) with BoolVal(i) -> if i then (evalExpr exp2 env) else (evalExpr exp3 env) | _ -> raise DynamicTypeError) 
+    | Function(pat,expr) -> FunctionVal(None,pat,expr,env) 
+    | FunctionCall(exp1,exp2) -> (match ((evalExpr exp1 env), (evalExpr exp2 env)) with (FunctionVal(opt,pat,expr,env1),j) -> (match pat with j -> evalExpr expr env1) | _ -> raise DynamicTypeError ) 
     | _ -> raise (ImplementMe "expression evaluation not implemented")
 
 
@@ -67,5 +72,6 @@ let rec evalExpr (e:moexpr) (env:moenv) : movalue =
 let rec evalDecl (d:modecl) (env:moenv) : moresult =
   match d with
       Expr(e) -> (None, evalExpr e env)
+    |  Let(str,expr) -> (Some str, (evalExpr expr env)) 
     | _ -> raise (ImplementMe "let and let rec not implemented")
 
