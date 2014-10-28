@@ -11,11 +11,98 @@
    call the function runtests() to run these tests
 *)
 let tests = [
-		("3", "3"); 
-		("false", "false");
-		("let x = 34", "val x = 34");
-		("y", "dynamic type error");
-		("x + 4", "38")
+  ("3", "3");                              	    (* IntConst of int *)   
+    ("true", "true");                               (* BoolConst of bool *)          
+    ("false", "false");                             (* BoolConst of bool *)
+    ("[]", "[]");                                   (* Nil *)
+    ("let x = 34", "val x = 34");                   (* Let of string * moexpr *)
+    ("x", "34");                                    (* Var of string *)
+    ("y", "dynamic type error");                    (* Var of string *)
+    ("3 + 4", "7");                                 (* BinOp of moexpr * Plus * moexpr *)
+    ("x + 4", "38");                                (* BinOp of moexpr * Plus * moexpr *)
+    ("3 * 4", "12");                                (* BinOp of moexpr * Minus * moexpr *)
+    ("3 + 4", "7");                                 (* BinOp of moexpr * Times * moexpr *)
+    ("3 = 4", "false");                             (* BinOp of moexpr * Eq * moexpr *)
+    ("5 = 5", "true");                              (* BinOp of moexpr * Eq * moexpr *)
+    ("3 > 4", "false");                             (* BinOp of moexpr * Gt * moexpr *)
+    ("4 > 3", "true");                              (* BinOp of moexpr * Gt * moexpr *)
+    ("4::[]", "[4]");                               (* BinOp of moexpr * Cons * moexpr *)
+    ("4::[5]", "[4; 5]");                           (* BinOp of moexpr * Cons * moexpr *)
+    ("4::[5;6]", "[4; 5; 6]");                      (* BinOp of moexpr * Cons * moexpr *)
+    ("-x", "-34");                                  (* Negate of moexpr *)
+    ("-8", "-8");                                   (* Negate of moexpr *)
+    ("-(8+9)", "-17");                              (* Negate of moexpr *)
+    ("let y = 50", "val y = 50");                   (* Let of string * moexpr *)
+    ("if x > y then true else false", "false");     (* If of moexpr * moexpr * moexpr *)
+    ("if y > x then true else false", "true");       (* If of moexpr * moexpr * moexpr *)
+
+  (*   (* My test cases, check if correct *)
+    (* simple tests *)
+    ("x + 4", "38");
+    ("x - 4", "30");
+    ("x * 4", "136");
+    ("x = 34", "true");
+    ("x = 0", "false");
+    ("x > 33", "true");
+    ("35 > x", "true");
+    ("x > 35", "false");
+    ("5::3", "dynamic type error");
+    ("-x", "-34");
+    ("33 > -x", "true");
+    ("-[]", "dynamic type error");
+    ("(if x = 34 then 2 else 3)::[2; 3]", "[2; 2; 3]");
+    ("if 1 then 2 else 3", "dynamic type error");
+    ("if [2; 3] then 5 else 10", "dynamic type error");
+    ("if 2 > 5 then 20 else 3", "3");
+
+ (* non-recursive function testing *)
+    ("let newfunc = function x -> x * x", "val newfunc = <fun>");
+    ("newfunc 2", "4");
+    ("newfunc(2)", "4");
+    ("let timesThreeNums = function a -> function b -> function c -> a * b * c", "val timesThreeNums = <fun>");
+ ("timesThreeNums 2 3 4", "24");
+    ("let multSix = timesThreeNums 2 3", "val multSix = <fun>");
+    ("multSix 2", "12");
+    ("let a = function true -> false", "val a = <fun>");
+    ("a 1", "match failure"); (* not sure about this one *)
+    ("let b = function _ -> true", "val b = <fun>");
+    ("b 1", "true");
+    ("b [1; 2; 3]", "true");
+    ("let decapitate = function head::tail -> tail", "val decapitate = <fun>");
+    ("decapitate [1; 2; 3]", "[2; 3]");
+    ("decapitate [1]", "[]");
+    ("decapitate []", "match failure");
+    ("(function _ -> x) 42", "34"); *)
+
+    (* pattern matching *)
+    ("let l = [1; 2; 3]", "val l = [1; 2; 3]");
+    ("match l with 1::2::[] -> true | _ -> false", "false");
+    ("match l with 1::2::rest -> rest", "[3]");
+    ("match 5 with s -> s", "5");
+    ("match 10 with _ -> x", "34");
+    ("(function s -> match s with head::tail -> head = x) [34; 2]", "true");
+    ("match 20 with x -> x", "20");
+    ("match 1 with 1 -> (match 2 with 1 -> false) | _ -> true", "match failure");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		]
 
 (* The Test Harness

@@ -34,10 +34,16 @@ let rec patMatch (pat:mopat) (value:movalue) : moenv =
 	 no variables are declared in the pattern so the returned environment is empty *)
       (IntPat(i), IntVal(j)) when i=j -> Env.empty_env()
     | (BoolPat(i),BoolVal(j)) when i=j -> Env.empty_env()
-    | (WildcardPat,j) -> Env.empty_env()
-    | (NilPat , ListVal(j))  when j=NilVal -> Env.empty_env()   
-    | _ -> raise (ImplementMe "pattern matching not implemented")
+    | (WildcardPat, _) -> Env.empty_env()
+    | (NilPat , ListVal(j))  when j=NilVal -> Env.empty_env()  
+    | (VarPat(str), value)  -> (Env.add_binding str value (Env.empty_env()))
+    | (ConsPat(pat1,pat2) , ListVal(ConsVal(head,tail))) -> (Env.combine_envs (patMatch pat1 head) (patMatch pat2 (ListVal(tail)))) 
+    | _ -> raise MatchFailure 
 
+
+
+let rec findMatch (v:movalue) (lis: (mopat * moexpr) list) : (moenv * moexpr)  =
+  match lis with [] -> raise MatchFailure | (p,e)::tail -> (try ((patMatch p v), e) with MatchFailure -> findMatch v tail)
 
 (* Evaluate an expression in the given environment and return the
    associated value.  Raise a MatchFailure if pattern matching fails.
@@ -51,7 +57,7 @@ let rec evalExpr (e:moexpr) (env:moenv) : movalue =
       IntConst(i) -> IntVal(i)
     | BoolConst(i) -> BoolVal(i)
     | Nil -> ListVal(NilVal)
-    | Var(i) -> Env.lookup i env
+    | Var(i) -> (try (Env.lookup i env) with Env.NotBound -> raise DynamicTypeError)
     | BinOp(expr1,op,expr2) -> (match op with Plus -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (IntVal(i),IntVal(j)) -> IntVal(i + j) | _ -> raise DynamicTypeError)   
 		 			 | Minus -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (IntVal(i),IntVal(j)) -> IntVal(i - j) | _ -> raise DynamicTypeError)
 					 | Times -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (IntVal(i),IntVal(j)) -> IntVal(i * j) | _ -> raise DynamicTypeError)
@@ -60,11 +66,11 @@ let rec evalExpr (e:moexpr) (env:moenv) : movalue =
 				         | Cons -> (match ((evalExpr expr1 env) , (evalExpr expr2 env)) with (i, ListVal(j)) -> ListVal(ConsVal(i,j)) | _ -> raise DynamicTypeError)) 
     | Negate(exp) -> (match (evalExpr exp env) with IntVal(i) -> IntVal(-i) | _ -> raise DynamicTypeError) 
     | If(exp1,exp2,exp3) -> (match (evalExpr exp1 env) with BoolVal(i) -> if i then (evalExpr exp2 env) else (evalExpr exp3 env) | _ -> raise DynamicTypeError) 
-    | Function(pat,expr) -> FunctionVal(None,pat,expr,env) 
-    | FunctionCall(exp1,exp2) -> (match ((evalExpr exp1 env), (evalExpr exp2 env)) with (FunctionVal(opt,pat,expr,env1),j) -> (match pat with j -> evalExpr expr env1) | _ -> raise DynamicTypeError ) 
-    | _ -> raise (ImplementMe "expression evaluation not implemented")
-
-
+    | Function(pat,expr) -> FunctionVal(None,pat,expr,env)
+    | FunctionCall(exp1,exp2) -> (match ((evalExpr exp1 env), (evalExpr exp2 env)) with (FunctionVal(opt,pat,expr,env1),j) -> let env2 = (try (patMatch pat j)  with MatchFailure  -> raise MatchFailure) in (evalExpr expr  (Env.combine_envs env1 env2)) | _ -> raise MatchFailure)
+    | Match(exp, lis) ->  let value = evalExpr exp env in (let (newEnv,resExpr) = (try findMatch value lis with MatchFailure -> raise MatchFailure) in (evalExpr resExpr (Env.combine_envs env newEnv))) 
+    | _ -> raise MatchFailure 
+  
 (* Evaluate a declaration in the given environment.  Evaluation
    returns the name of the variable declared (if any) by the
    declaration along with the value of the declaration's expression.
@@ -72,6 +78,7 @@ let rec evalExpr (e:moexpr) (env:moenv) : movalue =
 let rec evalDecl (d:modecl) (env:moenv) : moresult =
   match d with
       Expr(e) -> (None, evalExpr e env)
-    |  Let(str,expr) -> (Some str, (evalExpr expr env)) 
+    |  Let(str,expr) -> (Some str, (evalExpr expr env))
+    |  LetRec(str,pat,expr) -> (Some str, FunctionVal(Some str,pat,expr,env)) 
     | _ -> raise (ImplementMe "let and let rec not implemented")
 
