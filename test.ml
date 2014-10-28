@@ -72,7 +72,7 @@ let tests = [
     ("decapitate [1; 2; 3]", "[2; 3]");
     ("decapitate [1]", "[]");
     ("decapitate []", "match failure");
-    ("(function _ -> x) 42", "34"); *)
+    ("(function _ -> x) 42", "34"); 
 
     (* pattern matching *)
     ("let l = [1; 2; 3]", "val l = [1; 2; 3]");
@@ -86,24 +86,57 @@ let tests = [
 
 
 
+  (* recursive function testing *)
+    ("let rec recTest num = match num with 0 -> 0 | s -> 1 + (if s > 0 then recTest(s-1) else recTest(s+1))", "val recTest = <fun>");
+    ("recTest 10", "10");
+    ("recTest (-10)", "10");
+    ("let rec recTest2 _ = recTest2", "val recTest2 = <fun>");
+    ("recTest2", "<fun>");
+    ("recTest2 1 2 3 4 5 6 7 8 9 10 11 12", "<fun>");
+    ("let rec fact n = if n > 0 then n * fact (n - 1) else 1", "val fact = <fun>");
+    ("fact 5", "120");
+    ("let rec map f = function l -> match l with [] -> [] | x::xs -> (f x)::(map f xs)", "val map = <fun>");
+    ("(map fact) [1;2;3;4;5]", "[1; 2; 6; 24; 120]");
 
 
 
 
+    (* Scope testing *)
+    ("let f = function x -> x", "val f = <fun>");
+    ("let g = function x -> x + (f x)", "val g = <fun>");
+    ("let f = function x -> x * 23", "val f = <fun>");
+    ("g 5", "10");
+    ("f 5", "115");
+    ("let rec f l = function v -> match l with [] -> v | x::xs -> (f xs v+1)", "val f = <fun>");
+    ("f [5;3;2] 0", "3");
+    ("let rec f g = match g with f -> f 0", "val f = <fun>");
+    ("f (function _ -> 5)", "5"); (* recursive name shadowed by match. *)
+    ("let rec f l = match l with [] -> 0 | x::xs -> x + f xs", "val f = <fun>");
+    ("f [1;2;3]", "6"); (* Recursive name shadowing other f *)
 
 
 
+(* Testing Errors *)
+	("false + false", "dynamic type error");
+	("1 + false", "dynamic type error");
+	("1 - false", "dynamic type error");
+	("1 * false", "dynamic type error");
+	("1 > false", "dynamic type error");
+	("1 = false", "dynamic type error");
+	("4::5", "dynamic type error");
+
+*)
+
+    (* 
+  	Tricky with env variable, not sure if our mocaml need to support this.
+  	It relate to the sequence that add_binding 'function f' first or add_binding 'variable f' first
+    *)
+    ("let f = 2", "val f = 2");
+    ("let rec f f = match f with 0 -> f | _ -> (f+1)", "val f = <fun>");
+    ("f 1","2");
+    ]
 
 
-
-
-
-
-
-
-
-
-		]
 
 (* The Test Harness
    You don't need to understand the code below.

@@ -67,7 +67,7 @@ let rec evalExpr (e:moexpr) (env:moenv) : movalue =
     | Negate(exp) -> (match (evalExpr exp env) with IntVal(i) -> IntVal(-i) | _ -> raise DynamicTypeError) 
     | If(exp1,exp2,exp3) -> (match (evalExpr exp1 env) with BoolVal(i) -> if i then (evalExpr exp2 env) else (evalExpr exp3 env) | _ -> raise DynamicTypeError) 
     | Function(pat,expr) -> FunctionVal(None,pat,expr,env)
-    | FunctionCall(exp1,exp2) -> (match ((evalExpr exp1 env), (evalExpr exp2 env)) with (FunctionVal(opt,pat,expr,env1),j) -> let env2 = (try (patMatch pat j)  with MatchFailure  -> raise MatchFailure) in (evalExpr expr  (Env.combine_envs env1 env2)) | _ -> raise MatchFailure)
+    | FunctionCall(exp1,exp2) -> (match ((evalExpr exp1 env), (evalExpr exp2 env)) with (FunctionVal(opt,pat,expr,env1),j) -> (match opt with None ->(let env2 = (try (patMatch pat j)  with MatchFailure  -> raise MatchFailure) in (evalExpr expr  (Env.combine_envs env1 env2))) | Some str -> (let env2 = (try (patMatch pat j)  with MatchFailure  -> raise MatchFailure) in (evalExpr expr  (Env.combine_envs (Env.add_binding str (FunctionVal(Some str,pat,expr,env1)) env1) env2)))) | _ -> raise MatchFailure)
     | Match(exp, lis) ->  let value = evalExpr exp env in (let (newEnv,resExpr) = (try findMatch value lis with MatchFailure -> raise MatchFailure) in (evalExpr resExpr (Env.combine_envs env newEnv))) 
     | _ -> raise MatchFailure 
   
